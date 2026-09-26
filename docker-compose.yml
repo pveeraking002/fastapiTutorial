@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: my_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d mydb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+    networks:
+      - mynetwork
+
+  myapp:
+    build: .
+    container_name: my_fastapi_app
+    restart: always
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: "postgresql+psycopg://postgres:password@db:5432/mydb"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
